@@ -18,7 +18,7 @@ load_dotenv()
 
 # Initialize Gemini LLM - FIX: Explicitly pass the API key
 llm = ChatGoogleGenerativeAI(
-    model="gemini-2.0-flash-exp",
+    model="gemini-2.5-flash",
     temperature=0.7,
     google_api_key=os.getenv('GEMINI_API_KEY')  # Explicitly pass the key
 )
