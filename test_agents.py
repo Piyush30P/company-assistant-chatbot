@@ -4,26 +4,40 @@ Run this to verify your setup is working correctly
 """
 import os
 from dotenv import load_dotenv
-from agents.research import research_user_company, search_web_duckduckgo, get_wikipedia_summary
+from agents.research import research_user_company, search_web_tavily, get_wikipedia_summary
 
 # Load environment variables
 load_dotenv()
 
-def test_api_key():
-    """Test if Gemini API key is set"""
+def test_api_keys():
+    """Test if required API keys are set"""
     print("\n" + "="*60)
-    print("TEST 1: Checking API Key")
+    print("TEST 1: Checking API Keys")
     print("="*60)
     
-    api_key = os.getenv('GEMINI_API_KEY')
-    if api_key:
+    all_good = True
+    
+    # Check Gemini API key
+    gemini_key = os.getenv('GEMINI_API_KEY')
+    if gemini_key:
         print("✅ GEMINI_API_KEY found!")
-        print(f"   Key starts with: {api_key[:10]}...")
-        return True
+        print(f"   Key starts with: {gemini_key[:10]}...")
     else:
         print("❌ GEMINI_API_KEY not found!")
         print("   Please set it in your .env file")
-        return False
+        all_good = False
+    
+    # Check Tavily API key
+    tavily_key = os.getenv('TAVILY_API_KEY')
+    if tavily_key:
+        print("✅ TAVILY_API_KEY found!")
+        print(f"   Key starts with: {tavily_key[:10]}...")
+    else:
+        print("❌ TAVILY_API_KEY not found!")
+        print("   Get it from: https://app.tavily.com/")
+        all_good = False
+    
+    return all_good
 
 
 def test_gemini_llm():
@@ -35,7 +49,10 @@ def test_gemini_llm():
     try:
         from langchain_google_genai import ChatGoogleGenerativeAI
         
-        llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp")
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-2.0-flash-exp",
+            google_api_key=os.getenv('GEMINI_API_KEY')
+        )
         response = llm.invoke("Say 'Hello, Jarvis!' in a friendly way.")
         
         print("✅ Gemini LLM working!")
@@ -46,17 +63,17 @@ def test_gemini_llm():
         return False
 
 
-def test_duckduckgo_search():
-    """Test DuckDuckGo search"""
+def test_tavily_search():
+    """Test Tavily search"""
     print("\n" + "="*60)
-    print("TEST 3: Testing DuckDuckGo Search")
+    print("TEST 3: Testing Tavily Search")
     print("="*60)
     
     try:
-        results = search_web_duckduckgo("Microsoft company", max_results=3)
+        results = search_web_tavily("Microsoft company", max_results=3)
         
         if results:
-            print(f"✅ DuckDuckGo search working!")
+            print(f"✅ Tavily search working!")
             print(f"   Found {len(results)} results")
             print(f"   First result: {results[0].get('title', 'N/A')}")
             return True
@@ -64,7 +81,8 @@ def test_duckduckgo_search():
             print("⚠️ No results returned")
             return False
     except Exception as e:
-        print(f"❌ DuckDuckGo search failed: {str(e)}")
+        print(f"❌ Tavily search failed: {str(e)}")
+        print("   Make sure TAVILY_API_KEY is set in .env")
         return False
 
 
@@ -136,9 +154,9 @@ def run_all_tests():
     print("="*60)
     
     tests = [
-        ("API Key", test_api_key),
+        ("API Keys", test_api_keys),
         ("Gemini LLM", test_gemini_llm),
-        ("DuckDuckGo Search", test_duckduckgo_search),
+        ("Tavily Search", test_tavily_search),
         ("Wikipedia", test_wikipedia),
         ("User Company Research", test_user_company_research)
     ]
@@ -185,6 +203,7 @@ if __name__ == "__main__":
         print("3. Test Phase 1 flow")
     else:
         print("\n🔧 Fix the failing tests first:")
-        print("1. Check your .env file has GEMINI_API_KEY")
-        print("2. Verify internet connection")
-        print("3. Try running individual tests")
+        print("1. Check your .env file has both GEMINI_API_KEY and TAVILY_API_KEY")
+        print("2. Get Tavily key from: https://app.tavily.com/")
+        print("3. Verify internet connection")
+        print("4. Try running individual tests")

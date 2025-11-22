@@ -5,7 +5,7 @@ Includes: Web search, Financial data, Wikipedia, News, and User company research
 import os
 from typing import Dict, List, Optional
 from dotenv import load_dotenv
-from duckduckgo_search import DDGS
+from tavily import TavilyClient
 import wikipedia
 import yfinance as yf
 import feedparser
@@ -16,12 +16,15 @@ from utils.state import ResearchState, UserCompanyResearch
 # Load environment variables
 load_dotenv()
 
-# Initialize Gemini LLM
+# Initialize Gemini LLM - FIX: Explicitly pass the API key
 llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
+    model="gemini-2.0-flash-exp",
     temperature=0.7,
-    google_api_key=os.getenv('GEMINI_API_KEY')
+    google_api_key=os.getenv('GEMINI_API_KEY')  # Explicitly pass the key
 )
+
+# Initialize Tavily client
+tavily_client = TavilyClient(api_key=os.getenv('TAVILY_API_KEY'))
 
 
 # ============================================================
@@ -58,9 +61,9 @@ def research_user_company(company_name: str) -> UserCompanyResearch:
     except Exception as e:
         print(f"⚠️ Wikipedia lookup failed: {e}")
     
-    # 2. Get web search results for products
+    # 2. Get web search results for products using Tavily
     try:
-        web_results = search_web_duckduckgo(f"{company_name} products services", max_results=5)
+        web_results = search_web_tavily(f"{company_name} products services", max_results=5)
         products = extract_products_from_web(web_results, company_name)
         research_result['products'] = products
     except Exception as e:
@@ -89,13 +92,13 @@ def research_user_company(company_name: str) -> UserCompanyResearch:
 # ============================================================
 
 def web_search_node(state: ResearchState) -> ResearchState:
-    """Web search agent using DuckDuckGo"""
+    """Web search agent using Tavily"""
     company = state.get('target_company_name', '')
     
     state['progress_messages'].append(f"🔍 Searching web for {company}...")
     
     try:
-        results = search_web_duckduckgo(
+        results = search_web_tavily(
             f"{company} company information overview",
             max_results=10
         )
@@ -104,10 +107,10 @@ def web_search_node(state: ResearchState) -> ResearchState:
         for r in results:
             web_results.append({
                 "title": r.get('title', ''),
-                "snippet": r.get('body', ''),
-                "url": r.get('href', ''),
-                "source": "DuckDuckGo",
-                "confidence": 0.7
+                "snippet": r.get('content', ''),
+                "url": r.get('url', ''),
+                "source": "Tavily",
+                "confidence": r.get('score', 0.7)
             })
         
         state['web_results'] = web_results
@@ -246,13 +249,17 @@ def news_node(state: ResearchState) -> ResearchState:
 # HELPER FUNCTIONS
 # ============================================================
 
-def search_web_duckduckgo(query: str, max_results: int = 10) -> List[Dict]:
-    """Search using DuckDuckGo (free, no API key needed)"""
+def search_web_tavily(query: str, max_results: int = 10) -> List[Dict]:
+    """Search using Tavily (requires API key but has generous free tier)"""
     try:
-        results = DDGS().text(query, max_results=max_results)
-        return list(results)
+        response = tavily_client.search(
+            query=query,
+            max_results=max_results,
+            search_depth="basic"  # or "advanced" for more comprehensive results
+        )
+        return response.get('results', [])
     except Exception as e:
-        print(f"DuckDuckGo search error: {e}")
+        print(f"Tavily search error: {e}")
         return []
 
 
@@ -323,7 +330,7 @@ def extract_products_from_web(web_results: List[Dict], company_name: str) -> Lis
     """Extract products/services from web search results using Gemini"""
     try:
         # Combine snippets
-        snippets = "\n".join([r.get('body', '') for r in web_results[:3]])
+        snippets = "\n".join([r.get('content', r.get('body', '')) for r in web_results[:3]])
         
         prompt = f"""Based on these search results about {company_name}, list their main products or services.
 
@@ -357,4 +364,4 @@ if __name__ == "__main__":
     print(f"\nOverview:\n{result.get('overview', 'N/A')}")
     print(f"\nProducts:\n" + "\n".join([f"- {p}" for p in result.get('products', [])]))
     print(f"\nKey Metrics:\n{result.get('key_metrics', {})}")
-    print(f"\nRecent News:\n" + "\n".join([f"- {n}" for n in result.get('news', [])]))  
+    print(f"\nRecent News:\n" + "\n".join([f"- {n}" for n in result.get('news', [])]))
