@@ -18,7 +18,7 @@ def supervisor_node(state: ResearchState) -> ResearchState:
     Supervisor agent that routes to appropriate research agents
     Sequential flow: Research → Verify → Synthesize → Generate Plans
     """
-    # Check what stage we're at
+    # Check what stage we're at (use 'conflicts' not in state to check if verification hasn't run)
     if not state.get("web_results"):
         state["next_node"] = "web_search"
     elif not state.get("financial_data"):
@@ -27,7 +27,7 @@ def supervisor_node(state: ResearchState) -> ResearchState:
         state["next_node"] = "wikipedia"
     elif not state.get("news_data"):
         state["next_node"] = "news"
-    elif not state.get("conflicts"):
+    elif 'conflicts' not in state:
         state["next_node"] = "verification"
     elif not state.get("synthesized_data"):
         state["next_node"] = "synthesis"
@@ -37,7 +37,7 @@ def supervisor_node(state: ResearchState) -> ResearchState:
         state["next_node"] = "generic_plan"
     else:
         state["next_node"] = "end"
-    
+
     return state
 
 
