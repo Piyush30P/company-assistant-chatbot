@@ -125,50 +125,69 @@ def web_search_node(state: ResearchState) -> ResearchState:
 
 def financial_node(state: ResearchState) -> ResearchState:
     """Financial data agent using yfinance"""
+    import time
     company = state.get('target_company_name', '')
-    
+
     state['progress_messages'].append(f"💰 Fetching financial data...")
-    
+
     try:
         # First, try to get ticker symbol using Gemini
         ticker_prompt = f"What is the stock ticker symbol for {company}? Reply with ONLY the ticker symbol (e.g., MSFT, TSLA, AAPL), nothing else."
         ticker_response = llm.invoke(ticker_prompt)
         ticker_symbol = ticker_response.content.strip().upper()
-        
-        # Get financial data
-        ticker = yf.Ticker(ticker_symbol)
-        info = ticker.info
-        
-        financial_data = {
-            "ticker": ticker_symbol,
-            "revenue": info.get("totalRevenue"),
-            "market_cap": info.get("marketCap"),
-            "pe_ratio": info.get("trailingPE"),
-            "employees": info.get("fullTimeEmployees"),
-            "sector": info.get("sector"),
-            "industry": info.get("industry"),
-            "website": info.get("website"),
-            "description": info.get("longBusinessSummary"),
-            "source": "Yahoo Finance",
-            "confidence": 0.95
-        }
-        
-        state['financial_data'] = financial_data
-        state['progress_messages'].append("✅ Financial data retrieved")
-        
-        # Add to sources
-        if 'sources' not in state:
-            state['sources'] = []
-        state['sources'].append({
-            "title": f"{company} - Yahoo Finance",
-            "url": f"https://finance.yahoo.com/quote/{ticker_symbol}",
-            "confidence": 0.95
-        })
-        
+
+        # Add delay to avoid rate limiting
+        time.sleep(1)
+
+        # Get financial data with retry logic
+        max_retries = 2
+        for attempt in range(max_retries):
+            try:
+                ticker = yf.Ticker(ticker_symbol)
+                info = ticker.info
+
+                financial_data = {
+                    "ticker": ticker_symbol,
+                    "revenue": info.get("totalRevenue"),
+                    "market_cap": info.get("marketCap"),
+                    "pe_ratio": info.get("trailingPE"),
+                    "employees": info.get("fullTimeEmployees"),
+                    "sector": info.get("sector"),
+                    "industry": info.get("industry"),
+                    "website": info.get("website"),
+                    "description": info.get("longBusinessSummary"),
+                    "source": "Yahoo Finance",
+                    "confidence": 0.95
+                }
+
+                state['financial_data'] = financial_data
+                state['progress_messages'].append("✅ Financial data retrieved")
+
+                # Add to sources
+                if 'sources' not in state:
+                    state['sources'] = []
+                state['sources'].append({
+                    "title": f"{company} - Yahoo Finance",
+                    "url": f"https://finance.yahoo.com/quote/{ticker_symbol}",
+                    "confidence": 0.95
+                })
+                break  # Success, exit retry loop
+
+            except Exception as retry_error:
+                if attempt < max_retries - 1:
+                    time.sleep(2)  # Wait before retry
+                    continue
+                else:
+                    raise retry_error
+
     except Exception as e:
-        state['progress_messages'].append(f"⚠️ Financial data unavailable: {str(e)}")
+        error_msg = str(e)
+        if "429" in error_msg or "Too Many Requests" in error_msg:
+            state['progress_messages'].append(f"⚠️ Rate limited by Yahoo Finance - skipping financial data")
+        else:
+            state['progress_messages'].append(f"⚠️ Financial data unavailable: {error_msg}")
         state['financial_data'] = None
-    
+
     return state
 
 
@@ -266,12 +285,21 @@ def search_web_tavily(query: str, max_results: int = 10) -> List[Dict]:
 def get_wikipedia_summary(company_name: str, sentences: int = 5) -> Optional[str]:
     """Get Wikipedia summary for a company"""
     try:
-        search_results = wikipedia.search(company_name)
+        # Clean company name (remove extra spaces, quotes, backslashes)
+        clean_name = company_name.strip().replace('"', '').replace('\\', '')
+        search_results = wikipedia.search(clean_name)
         if not search_results:
             return None
-        
+
         summary = wikipedia.summary(search_results[0], sentences=sentences)
         return summary
+    except wikipedia.exceptions.DisambiguationError as e:
+        # If there are multiple options, take the first one
+        try:
+            return wikipedia.summary(e.options[0], sentences=sentences)
+        except:
+            print(f"Wikipedia disambiguation error: {e}")
+            return None
     except Exception as e:
         print(f"Wikipedia error: {e}")
         return None
@@ -308,9 +336,13 @@ def get_financial_data_basic(company_name: str) -> Optional[Dict[str, str]]:
 def get_recent_news(company_name: str, max_items: int = 5) -> List[Dict]:
     """Get recent news using Google News RSS"""
     try:
-        feed_url = f"https://news.google.com/rss/search?q={company_name}&hl=en-US&gl=US&ceid=US:en"
+        from urllib.parse import quote
+        # Clean and encode company name
+        clean_name = company_name.strip()
+        encoded_name = quote(clean_name)
+        feed_url = f"https://news.google.com/rss/search?q={encoded_name}&hl=en-US&gl=US&ceid=US:en"
         feed = feedparser.parse(feed_url)
-        
+
         news_items = []
         for entry in feed.entries[:max_items]:
             news_items.append({
@@ -319,7 +351,7 @@ def get_recent_news(company_name: str, max_items: int = 5) -> List[Dict]:
                 "published": entry.get('published', 'N/A'),
                 "source": entry.get('source', {}).get('title', 'Unknown')
             })
-        
+
         return news_items
     except Exception as e:
         print(f"News fetch error: {e}")
