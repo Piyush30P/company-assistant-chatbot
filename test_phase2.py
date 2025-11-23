@@ -178,26 +178,25 @@ def test_full_workflow():
         }
         
         workflow = create_research_workflow()
-        
-        # Run workflow
-        final_state = None
-        step_count = 0
-        for step_output in workflow.stream(state):
-            step_count += 1
-            if 'progress_messages' in step_output:
-                msgs = step_output.get('progress_messages', [])
-                if msgs:
-                    print(f"   Step {step_count}: {msgs[-1]}")
-            final_state = step_output
-        
+
+        # Run workflow - use invoke() to get complete final state
+        print("   Starting workflow execution...")
+        final_state = workflow.invoke(state)
+
         # Check results
         if final_state and final_state.get('account_plan'):
             print("✅ Full workflow completed successfully!")
-            print(f"   Total steps: {step_count}")
-            print(f"   Plan generated: {len(final_state['account_plan'].get('content', ''))} chars")
+            plan_content = final_state['account_plan'].get('content', '')
+            print(f"   Plan generated: {len(plan_content)} chars")
+
+            # Show some progress info
+            if 'progress_messages' in final_state:
+                print(f"   Total progress steps: {len(final_state['progress_messages'])}")
+
             return True
         else:
             print("⚠️ Workflow completed but no plan generated")
+            print(f"   Debug - Final state keys: {list(final_state.keys())}")
             return False
             
     except Exception as e:
