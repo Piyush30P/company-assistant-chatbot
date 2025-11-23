@@ -184,9 +184,16 @@ def test_full_workflow():
         final_state = workflow.invoke(state)
 
         # Check results
-        if final_state and final_state.get('account_plan'):
-            print("✅ Full workflow completed successfully!")
-            plan_content = final_state['account_plan'].get('content', '')
+        account_plan = final_state.get('account_plan')
+
+        # Debug: Check what we actually got
+        print(f"\n   Debug Info:")
+        print(f"   - account_plan value: {account_plan}")
+        print(f"   - account_plan type: {type(account_plan)}")
+
+        if account_plan and isinstance(account_plan, dict) and account_plan.get('content'):
+            print("\n✅ Full workflow completed successfully!")
+            plan_content = account_plan.get('content', '')
             print(f"   Plan generated: {len(plan_content)} chars")
 
             # Show some progress info
@@ -195,8 +202,18 @@ def test_full_workflow():
 
             return True
         else:
-            print("⚠️ Workflow completed but no plan generated")
-            print(f"   Debug - Final state keys: {list(final_state.keys())}")
+            print("\n⚠️ Workflow completed but no plan generated")
+            if account_plan:
+                print(f"   account_plan exists but is: {account_plan}")
+            else:
+                print(f"   account_plan is None or empty")
+
+            # Show progress messages to see what happened
+            if 'progress_messages' in final_state:
+                print(f"\n   Progress messages:")
+                for msg in final_state['progress_messages'][-5:]:  # Last 5 messages
+                    print(f"   - {msg}")
+
             return False
             
     except Exception as e:
