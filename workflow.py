@@ -30,6 +30,9 @@ def supervisor_node(state: ResearchState) -> ResearchState:
         print(f"   [Supervisor] web_results={'SET' if state.get('web_results') else 'NONE'}, financial_data={'SET' if state.get('financial_data') else 'NONE'}")
         print(f"   [Supervisor] wiki_data={'SET' if state.get('wiki_data') else 'NONE'}, news_data={'SET' if state.get('news_data') else 'NONE'}")
         print(f"   [Supervisor] conflicts={'SET' if state.get('conflicts') is not None else 'NONE'}, synthesized_data={'SET' if state.get('synthesized_data') else 'NONE'}")
+        if state.get('synthesized_data'):
+            synth_preview = str(state.get('synthesized_data'))[:100]
+            print(f"   [Supervisor] synthesized_data preview: {synth_preview}")
         print(f"   [Supervisor] account_plan={'SET' if state.get('account_plan') else 'NONE'}, generic_plan={'SET' if state.get('generic_plan') else 'NONE'}")
 
     # Check if data exists AND is not None (LangGraph auto-creates keys from TypedDict schema)

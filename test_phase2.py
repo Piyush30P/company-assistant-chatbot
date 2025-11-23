@@ -189,7 +189,8 @@ def test_full_workflow():
         # Run workflow - use invoke() to get complete final state
         print("\n   Starting workflow execution...")
         try:
-            final_state = workflow.invoke(state)
+            # Increase recursion limit to debug if it's a real loop or just needs more steps
+            final_state = workflow.invoke(state, {"recursion_limit": 50})
         except Exception as e:
             print(f"   ❌ Workflow invoke failed: {e}")
             import traceback
