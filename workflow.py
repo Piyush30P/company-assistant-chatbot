@@ -28,21 +28,22 @@ def supervisor_node(state: ResearchState) -> ResearchState:
     if debug:
         print(f"   [Supervisor] Checking state keys: {list(state.keys())}")
 
-    if 'web_results' not in state:
+    # Check if data exists AND is not None (LangGraph auto-creates keys from TypedDict schema)
+    if not state.get('web_results'):
         state["next_node"] = "web_search"
-    elif 'financial_data' not in state:
+    elif not state.get('financial_data'):
         state["next_node"] = "financial"
-    elif 'wiki_data' not in state:
+    elif not state.get('wiki_data'):
         state["next_node"] = "wikipedia"
-    elif 'news_data' not in state:
+    elif not state.get('news_data'):
         state["next_node"] = "news"
-    elif 'conflicts' not in state:
+    elif 'conflicts' not in state or state.get('conflicts') is None:
         state["next_node"] = "verification"
-    elif 'synthesized_data' not in state:
+    elif not state.get('synthesized_data'):
         state["next_node"] = "synthesis"
-    elif 'account_plan' not in state:
+    elif not state.get('account_plan'):
         state["next_node"] = "personalized_plan"
-    elif 'generic_plan' not in state:
+    elif not state.get('generic_plan'):
         state["next_node"] = "generic_plan_gen"
     else:
         state["next_node"] = "end"
