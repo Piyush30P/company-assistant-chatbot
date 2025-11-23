@@ -159,9 +159,15 @@ Create a comprehensive synthesis with these sections:
 Be factual, concise, and cite information confidence levels when uncertain."""
 
         response = llm.invoke(synthesis_prompt)
-        state['synthesized_data'] = response.content
-        
-        state['progress_messages'].append("✅ Research synthesized successfully")
+        synthesized_content = response.content.strip() if response.content else ""
+
+        # Ensure we never set empty string (prevents infinite loop)
+        if not synthesized_content:
+            state['synthesized_data'] = "No synthesis generated - empty response from LLM"
+            state['progress_messages'].append("⚠️ Synthesis returned empty response")
+        else:
+            state['synthesized_data'] = synthesized_content
+            state['progress_messages'].append("✅ Research synthesized successfully")
         
     except Exception as e:
         state['progress_messages'].append(f"⚠️ Synthesis failed: {str(e)}")
@@ -255,17 +261,23 @@ Use this structure:
 Make it SPECIFIC to {target}, not generic. Use actual details from the research."""
 
         response = llm.invoke(plan_prompt)
-        
+        plan_content = response.content.strip() if response.content else ""
+
+        # Ensure we never set empty content (prevents infinite loop)
+        if not plan_content:
+            plan_content = "No plan generated - empty response from LLM"
+            state['progress_messages'].append("⚠️ Plan generation returned empty response")
+        else:
+            state['progress_messages'].append("✅ Personalized plan generated!")
+
         # Store the plan
         state['account_plan'] = {
-            "content": response.content,
+            "content": plan_content,
             "generated_at": state.get('updated_at', ''),
             "target_company": target,
             "user_company": user_ctx.get('company_name', 'N/A'),
             "personalized": True
         }
-        
-        state['progress_messages'].append("✅ Personalized plan generated!")
         
     except Exception as e:
         state['progress_messages'].append(f"⚠️ Plan generation failed: {str(e)}")
@@ -308,15 +320,21 @@ Create a standard, generic account plan:
 Keep it professional but GENERIC - this is what a typical rep would create without personalization."""
 
         response = llm.invoke(generic_prompt)
-        
+        plan_content = response.content.strip() if response.content else ""
+
+        # Ensure we never set empty content (prevents infinite loop)
+        if not plan_content:
+            plan_content = "No generic plan generated - empty response from LLM"
+            state['progress_messages'].append("⚠️ Generic plan generation returned empty response")
+        else:
+            state['progress_messages'].append("✅ Generic plan generated for comparison")
+
         state['generic_plan'] = {
-            "content": response.content,
+            "content": plan_content,
             "generated_at": state.get('updated_at', ''),
             "target_company": target,
             "personalized": False
         }
-        
-        state['progress_messages'].append("✅ Generic plan generated for comparison")
         
     except Exception as e:
         state['progress_messages'].append(f"⚠️ Generic plan generation failed: {str(e)}")
