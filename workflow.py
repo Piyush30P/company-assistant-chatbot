@@ -27,6 +27,8 @@ def supervisor_node(state: ResearchState) -> ResearchState:
     debug = os.getenv('DEBUG_WORKFLOW', 'false').lower() == 'true'
     if debug:
         print(f"   [Supervisor] Checking state keys: {list(state.keys())}")
+        print(f"   [Supervisor] web_results={state.get('web_results')}, financial_data={state.get('financial_data')}")
+        print(f"   [Supervisor] account_plan={state.get('account_plan')}, generic_plan={state.get('generic_plan')}")
 
     # Check if data exists AND is not None (LangGraph auto-creates keys from TypedDict schema)
     if not state.get('web_results'):
@@ -50,6 +52,7 @@ def supervisor_node(state: ResearchState) -> ResearchState:
 
     if debug:
         print(f"   [Supervisor] Routing to: {state['next_node']}")
+        print(f"   [Supervisor] ---")
 
     return state
 
