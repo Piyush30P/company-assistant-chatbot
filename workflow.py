@@ -37,7 +37,7 @@ def supervisor_node(state: ResearchState) -> ResearchState:
     elif 'account_plan' not in state:
         state["next_node"] = "personalized_plan"
     elif 'generic_plan' not in state:
-        state["next_node"] = "generic_plan"
+        state["next_node"] = "generic_plan_gen"
     else:
         state["next_node"] = "end"
 
@@ -63,7 +63,7 @@ def create_research_workflow():
     workflow.add_node("verification", verification_node)
     workflow.add_node("synthesis", synthesis_node)
     workflow.add_node("personalized_plan", personalized_plan_generator_node)
-    workflow.add_node("generic_plan", generic_plan_generator_node)
+    workflow.add_node("generic_plan_gen", generic_plan_generator_node)
     
     # Set entry point
     workflow.set_entry_point("supervisor")
@@ -80,14 +80,14 @@ def create_research_workflow():
             "verification": "verification",
             "synthesis": "synthesis",
             "personalized_plan": "personalized_plan",
-            "generic_plan": "generic_plan",
+            "generic_plan_gen": "generic_plan_gen",
             "end": END
         }
     )
-    
+
     # All nodes return to supervisor for routing
-    for node in ["web_search", "financial", "wikipedia", "news", 
-                 "verification", "synthesis", "personalized_plan", "generic_plan"]:
+    for node in ["web_search", "financial", "wikipedia", "news",
+                 "verification", "synthesis", "personalized_plan", "generic_plan_gen"]:
         workflow.add_edge(node, "supervisor")
     
     return workflow.compile()
