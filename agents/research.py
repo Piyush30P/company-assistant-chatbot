@@ -176,50 +176,25 @@ def financial_node(state: ResearchState) -> ResearchState:
                     return state  # Success with Alpha Vantage
 
             except Exception as av_error:
-                state['progress_messages'].append(f"⚠️ Alpha Vantage failed: {str(av_error)[:50]}, trying Yahoo Finance...")
+                state['progress_messages'].append(f"⚠️ Alpha Vantage failed: {str(av_error)[:50]}, using basic data...")
 
-        # Fallback to Yahoo Finance
-        time.sleep(1)
+        # If Alpha Vantage fails, use basic data (no Yahoo Finance fallback to avoid rate limits)
+        financial_data = {
+            "ticker": ticker_symbol,
+            "revenue": None,
+            "market_cap": None,
+            "pe_ratio": None,
+            "employees": None,
+            "sector": "Technology",  # Generic fallback
+            "industry": "Software & Services",
+            "website": f"https://www.{company.lower().replace(' ', '')}.com",
+            "description": f"{company} is a technology company. (Financial data unavailable - using basic info)",
+            "source": "Basic Info",
+            "confidence": 0.50
+        }
 
-        max_retries = 2
-        for attempt in range(max_retries):
-            try:
-                ticker = yf.Ticker(ticker_symbol)
-                info = ticker.info
-
-                financial_data = {
-                    "ticker": ticker_symbol,
-                    "revenue": info.get("totalRevenue"),
-                    "market_cap": info.get("marketCap"),
-                    "pe_ratio": info.get("trailingPE"),
-                    "employees": info.get("fullTimeEmployees"),
-                    "sector": info.get("sector"),
-                    "industry": info.get("industry"),
-                    "website": info.get("website"),
-                    "description": info.get("longBusinessSummary"),
-                    "source": "Yahoo Finance",
-                    "confidence": 0.90
-                }
-
-                state['financial_data'] = financial_data
-                state['progress_messages'].append("✅ Financial data retrieved (Yahoo Finance)")
-
-                # Add to sources
-                if 'sources' not in state:
-                    state['sources'] = []
-                state['sources'].append({
-                    "title": f"{company} - Yahoo Finance",
-                    "url": f"https://finance.yahoo.com/quote/{ticker_symbol}",
-                    "confidence": 0.90
-                })
-                break  # Success, exit retry loop
-
-            except Exception as retry_error:
-                if attempt < max_retries - 1:
-                    time.sleep(2)  # Wait before retry
-                    continue
-                else:
-                    raise retry_error
+        state['financial_data'] = financial_data
+        state['progress_messages'].append("✅ Using basic company info (detailed financials unavailable)")
 
     except Exception as e:
         error_msg = str(e)
