@@ -201,85 +201,111 @@ Be factual, concise, and cite information confidence levels when uncertain."""
 
 def personalized_plan_generator_node(state: ResearchState) -> ResearchState:
     """
-    Plan generator - creates personalized account plan
-    This is the KEY feature that uses user context from Phase 1
+    Plan generator - creates comprehensive account plan ABOUT the target company
+    This matches the assignment requirements: analyze a company, don't sell to them
     """
-    state['progress_messages'].append("📝 Generating personalized account plan...")
-    
+    state['progress_messages'].append("📝 Generating comprehensive account plan...")
+
     try:
-        # Extract user context
-        user_ctx = state.get('user_context', {})
-        follow_up = state.get('follow_up_answers', {})
         target = state.get('target_company_name', '')
         synthesized = state.get('synthesized_data', '')
-        
-        # Build personalized prompt
-        plan_prompt = f"""You are a strategic sales consultant creating a PERSONALIZED account plan.
+        web_results = state.get('web_results', [])
+        financial_data = state.get('financial_data', {})
+        wiki_data = state.get('wiki_data', {})
+        news_data = state.get('news_data', [])
+        conflicts = state.get('conflicts', [])
 
-# YOUR COMPANY CONTEXT (The Salesperson):
-Company: {user_ctx.get('company_name', 'N/A')}
-Role: {user_ctx.get('role', 'N/A')}
-Product/Service: {user_ctx.get('product_service', 'N/A')}
-Research Purpose: {user_ctx.get('research_purpose', 'N/A')}
+        # Build comprehensive analysis prompt
+        plan_prompt = f"""You are a business analyst creating a comprehensive account plan ABOUT {target}.
 
-Value Proposition: {follow_up.get('value_proposition', 'N/A')}
-Ideal Customers: {follow_up.get('ideal_customers', 'N/A')}
-Customer Challenges: {follow_up.get('customer_challenges', 'N/A')}
-Differentiators: {follow_up.get('differentiators', 'N/A')}
+# RESEARCH DATA:
 
-# TARGET COMPANY:
-{target}
+## Company Overview:
+{wiki_data.get('summary', 'N/A') if wiki_data else 'N/A'}
 
-# RESEARCH SYNTHESIS:
-{synthesized}
+## Financial Information:
+- Ticker: {financial_data.get('ticker', 'N/A') if financial_data else 'N/A'}
+- Revenue: {financial_data.get('revenue', 'N/A') if financial_data else 'N/A'}
+- Market Cap: {financial_data.get('market_cap', 'N/A') if financial_data else 'N/A'}
+- Sector: {financial_data.get('sector', 'N/A') if financial_data else 'N/A'}
+- Industry: {financial_data.get('industry', 'N/A') if financial_data else 'N/A'}
+- Description: {financial_data.get('description', 'N/A') if financial_data else 'N/A'}
+
+## Recent News:
+{chr(10).join([f"- {item.get('title', 'N/A')}" for item in news_data[:5]]) if news_data else 'N/A'}
+
+## Web Research Insights:
+{chr(10).join([f"- {item.get('snippet', 'N/A')[:200]}" for item in web_results[:5]]) if web_results else 'N/A'}
+
+## Data Conflicts Detected:
+{chr(10).join([f"- {conflict}" for conflict in conflicts]) if conflicts else 'None detected'}
 
 ---
 
-Create a PERSONALIZED account plan that shows HOW your product/service specifically addresses this target company's needs.
+Create a COMPREHENSIVE ACCOUNT PLAN analyzing {target}. Use this structure:
 
-Use this structure:
+## 📋 Company Overview
+[High-level summary of what the company does, their mission, and market position]
 
-## 🎯 Executive Summary
-[2-3 sentences on why {user_ctx.get('company_name', 'your company')} is a fit for {target}]
+## 👔 Leadership Team
+[Key executives, their backgrounds, and strategic direction]
+- CEO/Founder: [Name and background]
+- Key Executives: [Names, roles, notable achievements]
 
-## 🔍 Target Company Profile
-- Company: {target}
-- Industry & Size: [from research]
-- Key Business Focus: [from research]
-- Recent Developments: [from research]
+## 💰 Financial Snapshot
+[Current financial health and performance]
+- Revenue: [Amount and growth trend]
+- Market Cap: [Current valuation]
+- Profitability: [Profit margins, trends]
+- Key Metrics: [Industry-specific KPIs]
 
-## 💡 Opportunity Analysis
-[WHY is this a good fit? Connect YOUR value prop to THEIR needs]
-- Business Need #1: [specific to {target}] → Your Solution: [how you solve it]
-- Business Need #2: [specific to {target}] → Your Solution: [how you solve it]
-- Business Need #3: [specific to {target}] → Your Solution: [how you solve it]
+## 📊 SWOT Analysis
+**Strengths:**
+- [Strength 1: Why it's a strength]
+- [Strength 2: Why it's a strength]
+- [Strength 3: Why it's a strength]
 
-## 🎁 Value Proposition
-[Customized pitch using YOUR differentiators for THIS specific company]
+**Weaknesses:**
+- [Weakness 1: What needs improvement]
+- [Weakness 2: What needs improvement]
 
-## 👥 Key Stakeholders
-[Who to contact at {target} based on your research]
-- Title 1: [Why they care]
-- Title 2: [Why they care]
-- Title 3: [Why they care]
+**Opportunities:**
+- [Opportunity 1: Market trends they can leverage]
+- [Opportunity 2: Expansion possibilities]
 
-## 📞 Recommended Approach
-[Specific outreach strategy]
-1. [First step]
-2. [Second step]
-3. [Third step]
+**Threats:**
+- [Threat 1: Competitive/market risks]
+- [Threat 2: External challenges]
 
-## ⚠️ Potential Objections & Responses
-[Anticipate objections specific to {target}]
-- Objection 1: [Response]
-- Objection 2: [Response]
+## 🎯 Market Opportunities
+[Where can this company grow or expand?]
+1. [Opportunity 1 with reasoning]
+2. [Opportunity 2 with reasoning]
+3. [Opportunity 3 with reasoning]
 
-## 📊 Success Metrics
-[How to measure this opportunity]
+## ⚠️ Risks & Challenges
+[What challenges does this company face?]
+1. [Risk 1 and potential impact]
+2. [Risk 2 and potential impact]
+3. [Risk 3 and potential impact]
 
-## 🚀 Next Steps
-[Concrete action items with timeline]
+## 📰 Recent News & Developments
+[Latest significant events, launches, acquisitions]
+- [Recent development 1]
+- [Recent development 2]
+- [Recent development 3]
 
+## 💡 Strategic Recommendations
+[What should investors/partners/analysts know?]
+1. [Recommendation 1]
+2. [Recommendation 2]
+3. [Recommendation 3]
+
+## 🔍 Data Quality Notes
+[Mention any conflicts or gaps in the research data]
+{f"Note: Found {len(conflicts)} data conflicts that may need verification." if conflicts else "Data quality: High - no significant conflicts detected."}
+
+Be factual, analytical, and cite specific data points from the research.
 Make it SPECIFIC to {target}, not generic. Use actual details from the research."""
 
         response = llm.invoke(plan_prompt)
@@ -290,15 +316,23 @@ Make it SPECIFIC to {target}, not generic. Use actual details from the research.
             plan_content = "No plan generated - empty response from LLM"
             state['progress_messages'].append("⚠️ Plan generation returned empty response")
         else:
-            state['progress_messages'].append("✅ Personalized plan generated!")
+            state['progress_messages'].append("✅ Account plan generated!")
 
         # Store the plan
         state['account_plan'] = {
             "content": plan_content,
             "generated_at": state.get('updated_at', ''),
             "target_company": target,
-            "user_company": user_ctx.get('company_name', 'N/A'),
-            "personalized": True
+            "sections": {
+                "overview": True,
+                "leadership": True,
+                "financial": True,
+                "swot": True,
+                "opportunities": True,
+                "risks": True,
+                "news": True,
+                "recommendations": True
+            }
         }
         
     except Exception as e:
