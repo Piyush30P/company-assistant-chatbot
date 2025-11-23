@@ -100,8 +100,13 @@ def synthesis_node(state: ResearchState) -> ResearchState:
     """
     Synthesis agent - combines all research data into a coherent summary
     """
+    import os
+    debug = os.getenv('DEBUG_WORKFLOW', 'false').lower() == 'true'
+    if debug:
+        print(f"   [SYNTHESIS] Node called - starting synthesis")
+
     state['progress_messages'].append("🧠 Synthesizing information...")
-    
+
     try:
         # Extract all research data
         company = state.get('target_company_name', 'Unknown')
@@ -109,6 +114,10 @@ def synthesis_node(state: ResearchState) -> ResearchState:
         financial_data = state.get('financial_data', {})
         wiki_data = state.get('wiki_data', {})
         news_data = state.get('news_data', [])
+
+        if debug:
+            print(f"   [SYNTHESIS] wiki_data type: {type(wiki_data)}, value: {wiki_data}")
+            print(f"   [SYNTHESIS] news_data type: {type(news_data)}, length: {len(news_data) if news_data else 0}")
         
         # Build synthesis prompt
         synthesis_prompt = f"""You are a research synthesis agent. Combine all the following research data about {company} into a comprehensive, accurate summary.
@@ -161,18 +170,31 @@ Be factual, concise, and cite information confidence levels when uncertain."""
         response = llm.invoke(synthesis_prompt)
         synthesized_content = response.content.strip() if response.content else ""
 
+        if debug:
+            print(f"   [SYNTHESIS] LLM response length: {len(synthesized_content) if synthesized_content else 0}")
+            print(f"   [SYNTHESIS] synthesized_content is truthy: {bool(synthesized_content)}")
+
         # Ensure we never set empty string (prevents infinite loop)
         if not synthesized_content:
             state['synthesized_data'] = "No synthesis generated - empty response from LLM"
             state['progress_messages'].append("⚠️ Synthesis returned empty response")
+            if debug:
+                print(f"   [SYNTHESIS] Set ERROR MESSAGE for synthesized_data")
         else:
             state['synthesized_data'] = synthesized_content
             state['progress_messages'].append("✅ Research synthesized successfully")
+            if debug:
+                print(f"   [SYNTHESIS] Set synthesized_data with {len(synthesized_content)} chars")
         
     except Exception as e:
         state['progress_messages'].append(f"⚠️ Synthesis failed: {str(e)}")
         # Set error message instead of None to prevent infinite loop
         state['synthesized_data'] = f"Error during synthesis: {str(e)}"
+        if debug:
+            print(f"   [SYNTHESIS] Exception occurred: {str(e)}")
+
+    if debug:
+        print(f"   [SYNTHESIS] Returning state with synthesized_data={'SET' if state.get('synthesized_data') else 'NONE'}")
 
     return state
 
