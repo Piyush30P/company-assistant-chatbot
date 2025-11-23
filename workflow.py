@@ -22,6 +22,12 @@ def supervisor_node(state: ResearchState) -> ResearchState:
     # Use 'key not in state' to check if a node has RUN (not if it succeeded)
     # This prevents infinite loops when nodes fail and set fields to None
 
+    # Debug: Print what keys exist
+    import os
+    debug = os.getenv('DEBUG_WORKFLOW', 'false').lower() == 'true'
+    if debug:
+        print(f"   [Supervisor] Checking state keys: {list(state.keys())}")
+
     if 'web_results' not in state:
         state["next_node"] = "web_search"
     elif 'financial_data' not in state:
@@ -40,6 +46,9 @@ def supervisor_node(state: ResearchState) -> ResearchState:
         state["next_node"] = "generic_plan_gen"
     else:
         state["next_node"] = "end"
+
+    if debug:
+        print(f"   [Supervisor] Routing to: {state['next_node']}")
 
     return state
 

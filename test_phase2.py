@@ -149,13 +149,15 @@ def test_full_workflow():
     print("\n" + "="*60)
     print("TEST 5: Testing Full Workflow (Optional)")
     print("="*60)
-    
+
     if not os.getenv('GEMINI_API_KEY') or not os.getenv('TAVILY_API_KEY'):
         print("⚠️ Skipping - API keys not set")
         print("   Set GEMINI_API_KEY and TAVILY_API_KEY to test full workflow")
         return True
-    
+
     try:
+        # Enable debug mode for this test
+        os.environ['DEBUG_WORKFLOW'] = 'true'
         from workflow import create_research_workflow
         from utils.state import create_initial_state
         
@@ -179,9 +181,20 @@ def test_full_workflow():
         
         workflow = create_research_workflow()
 
+        # Debug: Check initial state keys
+        print(f"\n   Initial state keys: {list(state.keys())}")
+        print(f"   'web_results' in state: {'web_results' in state}")
+        print(f"   'account_plan' in state: {'account_plan' in state}")
+
         # Run workflow - use invoke() to get complete final state
-        print("   Starting workflow execution...")
-        final_state = workflow.invoke(state)
+        print("\n   Starting workflow execution...")
+        try:
+            final_state = workflow.invoke(state)
+        except Exception as e:
+            print(f"   ❌ Workflow invoke failed: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
 
         # Check results
         account_plan = final_state.get('account_plan')
