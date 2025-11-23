@@ -487,7 +487,7 @@ elif st.session_state.phase == 'research':
                     
                     # Run workflow and display progress
                     final_state = None
-                    for step_output in workflow.stream(initial_state):
+                    for step_output in workflow.stream(initial_state, {"recursion_limit": 50}):
                         if 'progress_messages' in step_output:
                             latest_messages = step_output.get('progress_messages', [])
                             if latest_messages:
