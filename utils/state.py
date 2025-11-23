@@ -80,23 +80,29 @@ def create_initial_state(
     phase: str = "onboarding",
     user_context: Optional[UserContext] = None
 ) -> ResearchState:
-    """Create an initial state for the workflow"""
-    return ResearchState(
+    """Create an initial state for the workflow
+
+    Note: Phase 2 research keys (web_results, financial_data, etc.) are NOT
+    pre-populated. The supervisor checks 'key not in state', so we must not
+    set these keys until the corresponding nodes run.
+    """
+    state = ResearchState(
         phase=phase,
         user_context=user_context,
         user_company_research=None,
         follow_up_answers=None,
         onboarding_complete=False,
         target_company_name="",
-        web_results=None,
-        financial_data=None,
-        wiki_data=None,
-        news_data=None,
-        conflicts=[],
+        # DO NOT pre-populate these - supervisor checks 'key not in state'
+        # web_results=None,
+        # financial_data=None,
+        # wiki_data=None,
+        # news_data=None,
+        # conflicts=[],
+        # synthesized_data=None,
+        # account_plan=None,
+        # generic_plan=None,
         progress_messages=[],
-        synthesized_data=None,
-        account_plan=None,
-        generic_plan=None,
         sources=[],
         next_node="",
         needs_user_input=False,
@@ -105,3 +111,5 @@ def create_initial_state(
         created_at=datetime.now().isoformat(),
         updated_at=datetime.now().isoformat()
     )
+
+    return state
