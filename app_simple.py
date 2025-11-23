@@ -79,8 +79,8 @@ def generate_account_plan(company_name, research_data, focus_areas=""):
     # Create prompt
     prompt = get_full_plan_prompt(company_name, raw_data, focus_areas)
 
-    # Call LLM
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    # Call LLM (using gemini-1.5-flash-latest which is always available)
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
     response = model.generate_content(prompt)
 
     return response.text
@@ -99,7 +99,7 @@ def edit_section(company_name, section_name, current_content, edit_instructions,
         raw_data
     )
 
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
     response = model.generate_content(prompt)
 
     return response.text

@@ -96,7 +96,7 @@ def fetch_financial_data(company_name):
         # Get ticker symbol using LLM
         api_key = os.getenv('GEMINI_API_KEY')
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-1.5-flash-latest')
 
         ticker_prompt = f"What is the stock ticker symbol for {company_name}? Reply with ONLY the ticker symbol (e.g., MSFT, TSLA), nothing else."
         response = model.generate_content(ticker_prompt)
