@@ -27,7 +27,7 @@ def supervisor_node(state: ResearchState) -> ResearchState:
         state["next_node"] = "wikipedia"
     elif not state.get("news_data"):
         state["next_node"] = "news"
-    elif 'conflicts' not in state:
+    elif 'conflicts' not in state:  # THIS IS THE KEY FIX
         state["next_node"] = "verification"
     elif not state.get("synthesized_data"):
         state["next_node"] = "synthesis"
@@ -37,7 +37,7 @@ def supervisor_node(state: ResearchState) -> ResearchState:
         state["next_node"] = "generic_plan"
     else:
         state["next_node"] = "end"
-
+    
     return state
 
 
