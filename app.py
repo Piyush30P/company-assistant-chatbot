@@ -620,7 +620,7 @@ elif st.session_state.phase == 'research':
                     st.download_button(
                         "⬇️ Download as PDF",
                         pdf_buffer,
-                        file_name=f"account_plan_{state['target_company_name']}.pdf",
+                        file_name=f"account_plan_{state.get('target_company_name', 'company')}.pdf",
                         mime="application/pdf",
                         use_container_width=True
                     )
@@ -647,7 +647,7 @@ elif st.session_state.phase == 'research':
                 st.download_button(
                     "⬇️ Download Full Report (JSON)",
                     json_data,
-                    file_name=f"full_research_{state['target_company_name']}.json",
+                    file_name=f"full_research_{state.get('target_company_name', 'company')}.json",
                     mime="application/json",
                     use_container_width=True
                 )
