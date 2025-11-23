@@ -165,8 +165,9 @@ Be factual, concise, and cite information confidence levels when uncertain."""
         
     except Exception as e:
         state['progress_messages'].append(f"⚠️ Synthesis failed: {str(e)}")
-        state['synthesized_data'] = None
-    
+        # Set error message instead of None to prevent infinite loop
+        state['synthesized_data'] = f"Error during synthesis: {str(e)}"
+
     return state
 
 
@@ -268,8 +269,9 @@ Make it SPECIFIC to {target}, not generic. Use actual details from the research.
         
     except Exception as e:
         state['progress_messages'].append(f"⚠️ Plan generation failed: {str(e)}")
-        state['account_plan'] = None
-    
+        # Set error dict instead of None to prevent infinite loop
+        state['account_plan'] = {"error": f"Plan generation failed: {str(e)}", "content": ""}
+
     return state
 
 
@@ -318,6 +320,7 @@ Keep it professional but GENERIC - this is what a typical rep would create witho
         
     except Exception as e:
         state['progress_messages'].append(f"⚠️ Generic plan generation failed: {str(e)}")
-        state['generic_plan'] = None
-    
+        # Set error dict instead of None to prevent infinite loop
+        state['generic_plan'] = {"error": f"Generic plan generation failed: {str(e)}", "content": ""}
+
     return state
