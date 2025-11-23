@@ -61,6 +61,7 @@ class ResearchState(TypedDict, total=False):
     
     # Output
     account_plan: Optional[Dict[str, any]]
+    generic_plan: Optional[Dict[str, any]]  # Generic plan for comparison
     sources: List[Dict[str, any]]
     
     # Control Flow
@@ -95,6 +96,7 @@ def create_initial_state(
         progress_messages=[],
         synthesized_data=None,
         account_plan=None,
+        generic_plan=None,
         sources=[],
         next_node="",
         needs_user_input=False,
