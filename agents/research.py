@@ -124,7 +124,7 @@ def web_search_node(state: ResearchState) -> ResearchState:
 
 
 def financial_node(state: ResearchState) -> ResearchState:
-    """Financial data agent using yfinance"""
+    """Financial data agent using Alpha Vantage (primary) or yfinance (fallback)"""
     import time
     company = state.get('target_company_name', '')
 
@@ -136,10 +136,51 @@ def financial_node(state: ResearchState) -> ResearchState:
         ticker_response = llm.invoke(ticker_prompt)
         ticker_symbol = ticker_response.content.strip().upper()
 
-        # Add delay to avoid rate limiting
+        # Try Alpha Vantage first (more reliable, 500 requests/day free)
+        alpha_vantage_key = os.getenv('ALPHA_VANTAGE_API_KEY')
+
+        if alpha_vantage_key and alpha_vantage_key != 'your_alpha_vantage_api_key_here':
+            try:
+                from alpha_vantage.fundamentaldata import FundamentalData
+
+                fd = FundamentalData(key=alpha_vantage_key, output_format='json')
+                data, _ = fd.get_company_overview(symbol=ticker_symbol)
+
+                if data and 'Symbol' in data:
+                    financial_data = {
+                        "ticker": ticker_symbol,
+                        "revenue": int(data.get("RevenueTTM", 0)) if data.get("RevenueTTM") else None,
+                        "market_cap": int(data.get("MarketCapitalization", 0)) if data.get("MarketCapitalization") else None,
+                        "pe_ratio": float(data.get("PERatio", 0)) if data.get("PERatio") else None,
+                        "employees": int(data.get("FullTimeEmployees", 0)) if data.get("FullTimeEmployees") else None,
+                        "sector": data.get("Sector"),
+                        "industry": data.get("Industry"),
+                        "website": data.get("OfficialSite"),
+                        "description": data.get("Description"),
+                        "source": "Alpha Vantage",
+                        "confidence": 0.95
+                    }
+
+                    state['financial_data'] = financial_data
+                    state['progress_messages'].append("✅ Financial data retrieved (Alpha Vantage)")
+
+                    # Add to sources
+                    if 'sources' not in state:
+                        state['sources'] = []
+                    state['sources'].append({
+                        "title": f"{company} - Alpha Vantage",
+                        "url": f"https://www.alphavantage.co/query?function=OVERVIEW&symbol={ticker_symbol}",
+                        "confidence": 0.95
+                    })
+
+                    return state  # Success with Alpha Vantage
+
+            except Exception as av_error:
+                state['progress_messages'].append(f"⚠️ Alpha Vantage failed: {str(av_error)[:50]}, trying Yahoo Finance...")
+
+        # Fallback to Yahoo Finance
         time.sleep(1)
 
-        # Get financial data with retry logic
         max_retries = 2
         for attempt in range(max_retries):
             try:
@@ -157,11 +198,11 @@ def financial_node(state: ResearchState) -> ResearchState:
                     "website": info.get("website"),
                     "description": info.get("longBusinessSummary"),
                     "source": "Yahoo Finance",
-                    "confidence": 0.95
+                    "confidence": 0.90
                 }
 
                 state['financial_data'] = financial_data
-                state['progress_messages'].append("✅ Financial data retrieved")
+                state['progress_messages'].append("✅ Financial data retrieved (Yahoo Finance)")
 
                 # Add to sources
                 if 'sources' not in state:
@@ -169,7 +210,7 @@ def financial_node(state: ResearchState) -> ResearchState:
                 state['sources'].append({
                     "title": f"{company} - Yahoo Finance",
                     "url": f"https://finance.yahoo.com/quote/{ticker_symbol}",
-                    "confidence": 0.95
+                    "confidence": 0.90
                 })
                 break  # Success, exit retry loop
 
@@ -183,9 +224,9 @@ def financial_node(state: ResearchState) -> ResearchState:
     except Exception as e:
         error_msg = str(e)
         if "429" in error_msg or "Too Many Requests" in error_msg:
-            state['progress_messages'].append(f"⚠️ Rate limited by Yahoo Finance - skipping financial data")
+            state['progress_messages'].append(f"⚠️ Rate limited - skipping financial data")
         else:
-            state['progress_messages'].append(f"⚠️ Financial data unavailable: {error_msg}")
+            state['progress_messages'].append(f"⚠️ Financial data unavailable: {error_msg[:50]}")
         state['financial_data'] = None
 
     return state
